@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Business KPI Reference — Executive Dashboard</title>
+  <style>
+    /* ── Reset & Tokens ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #f4f5f7;
+      --surface:     #ffffff;
+      --border:      #e1e4e8;
+      --text-primary:#1a1d23;
+      --text-secondary:#5c6270;
+      --text-muted:  #9ca3af;
+      --accent:      #1e3a5f;
+      --accent-light:#e8edf4;
+      --tag-bg:      #eef2ff;
+      --tag-text:    #3b4fc8;
+      --hover-row:   #f0f4ff;
+      --modal-overlay:rgba(10,14,26,.55);
+      --radius:      8px;
+      --radius-lg:   12px;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,.08);
+      --shadow-md:   0 4px 16px rgba(0,0,0,.13);
+      --shadow-lg:   0 12px 40px rgba(0,0,0,.18);
+      --transition:  .18s ease;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    .site-header {
+      background: var(--accent);
+      color: #fff;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 58px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    .site-header .brand { display: flex; align-items: center; gap: 10px; }
+    .site-header .logo-mark {
+      width: 32px; height: 32px;
+      background: rgba(255,255,255,.15);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 800; letter-spacing: -1px;
+    }
+    .site-header .meta { font-size: 11px; opacity: .6; text-align: right; }
+
+    .search-bar {
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 20px;
+      padding: 5px 14px 5px 10px;
+      color: #fff;
+      font-size: 12px;
+      width: 220px;
+      outline: none;
+      transition: var(--transition);
+    }
+    .search-bar::placeholder { color: rgba(255,255,255,.5); }
+    .search-bar:focus { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.45); }
+    .search-wrap { display: flex; align-items: center; gap: 6px; }
+    .search-icon { font-size: 12px; opacity: .6; }
+
+    /* ── Legend bar ─────────────────────────────────────────── */
+    .legend-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .legend-bar .tip { margin-left: auto; opacity: .7; font-style: italic; }
+
+    /* ── Main Grid ──────────────────────────────────────────── */
+    .grid-wrap { padding: 20px 20px 40px; overflow-x: auto; }
+    .unit-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      min-width: 900px;
+    }
+
+    /* ── Column ─────────────────────────────────────────────── */
+    .unit-col {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+    }
+    .col-header {
+      padding: 14px 16px 12px;
+      border-bottom: 3px solid var(--col-color);
+      background: linear-gradient(135deg, rgba(0,0,0,.02) 0%, transparent 100%);
+    }
+    .col-header .col-icon { font-size: 20px; margin-bottom: 6px; display: block; }
+    .col-header .col-title { font-size: 13px; font-weight: 700; color: var(--text-primary); letter-spacing: .01em; }
+    .col-header .col-count { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Metric Row ─────────────────────────────────────────── */
+    .metric-list { padding: 6px 0; flex: 1; }
+    .metric-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 9px 16px;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .metric-row:hover { background: var(--hover-row); border-left-color: var(--col-color); }
+    .metric-row:hover .metric-arrow { opacity: 1; transform: translateX(0); }
+    .metric-bullet { width: 6px; height: 6px; border-radius: 50%; background: var(--col-color); flex-shrink: 0; margin-top: 5px; }
+    .metric-info { flex: 1; min-width: 0; }
+    .metric-name { font-size: 12.5px; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+    .metric-row:hover .metric-name { color: var(--col-color); }
+    .metric-tagline { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .metric-arrow { font-size: 10px; color: var(--col-color); opacity: 0; transform: translateX(-4px); transition: var(--transition); flex-shrink: 0; margin-top: 4px; }
+
+    .cat-divider {
+      font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+      color: var(--text-muted); padding: 8px 16px 2px;
+      border-top: 1px solid var(--border); margin-top: 4px;
+    }
+    .cat-divider:first-child { border-top: none; margin-top: 0; }
+
+    .metric-row.hidden { display: none; }
+    .unit-col.all-hidden { opacity: .35; }
+
+    /* ── Planned / Opportunity metrics ──────────────────────── */
+    .metric-row.is-planned .metric-bullet {
+      background: transparent;
+      border: 1.5px dashed var(--col-color);
+    }
+    .metric-row.is-planned .metric-name {
+      color: var(--text-secondary);
+    }
+    .metric-row.is-planned .metric-tagline {
+      font-style: italic;
+    }
+    .metric-row.is-planned:hover .metric-name {
+      color: var(--col-color);
+    }
+    .planned-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 8.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      background: #fff8e6;
+      color: #92600a;
+      border: 1px solid #f5c842;
+      padding: 1px 6px;
+      border-radius: 10px;
+      margin-left: 4px;
+      vertical-align: middle;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    /* Planned modal banner */
+    .planned-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: #fffbeb;
+      border: 1px solid #f5c842;
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 20px;
+    }
+    .planned-banner-icon { font-size: 22px; flex-shrink: 0; line-height: 1; }
+    .planned-banner-body {}
+    .planned-banner-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: #92600a;
+      margin-bottom: 4px;
+    }
+    .planned-banner-text {
+      font-size: 13px;
+      color: #5c4a1e;
+      line-height: 1.65;
+    }
+
+    /* Legend planned indicator */
+    .legend-planned {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    .legend-planned .planned-pill { margin-left: 0; }
+
+    /* ── Modal ───────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: var(--modal-overlay);
+      z-index: 500;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s ease;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      width: 100%; max-width: 560px; max-height: 88vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(16px) scale(.98);
+      transition: transform .22s ease, opacity .22s ease;
+      opacity: 0;
+    }
+    .modal-overlay.open .modal { transform: translateY(0) scale(1); opacity: 1; }
+
+    .modal-header {
+      padding: 20px 22px 16px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0;
+      background: var(--surface); z-index: 1;
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .modal-color-bar { width: 4px; border-radius: 4px; flex-shrink: 0; align-self: stretch; min-height: 40px; }
+    .modal-title-wrap { flex: 1; }
+    .modal-unit-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em;
+      padding: 2px 8px; border-radius: 12px; margin-bottom: 6px;
+    }
+    .modal-metric-name { font-size: 18px; font-weight: 700; color: var(--text-primary); line-height: 1.25; }
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 20px; line-height: 1;
+      padding: 4px; border-radius: 4px; transition: var(--transition); flex-shrink: 0;
+    }
+    .modal-close:hover { color: var(--text-primary); background: var(--bg); }
+
+    .modal-body { padding: 20px 22px 24px; }
+    .modal-definition {
+      font-size: 13.5px; color: var(--text-primary); line-height: 1.65;
+      margin-bottom: 20px; padding: 14px 16px;
+      background: var(--bg); border-radius: var(--radius); border-left: 3px solid;
+    }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .info-cell { background: var(--bg); border-radius: var(--radius); padding: 10px 12px; }
+    .info-cell .label { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); margin-bottom: 3px; }
+    .info-cell .value { font-size: 12.5px; font-weight: 600; color: var(--text-primary); }
+    .info-cell.full { grid-column: 1 / -1; }
+    .formula-code {
+      font-family: "SF Mono", "Consolas", monospace; font-size: 11.5px;
+      background: #1a1d23; color: #7dd3fc;
+      padding: 8px 12px; border-radius: 5px; margin-top: 4px;
+      display: block; overflow-x: auto; white-space: nowrap;
+    }
+
+    .accordion-wrap { display: flex; flex-direction: column; gap: 6px; }
+    .accordion-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 8px; }
+    .accordion-item { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .accordion-trigger {
+      width: 100%; background: none; border: none; padding: 11px 14px;
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; text-align: left; transition: background var(--transition); font-family: inherit;
+    }
+    .accordion-trigger:hover { background: var(--hover-row); }
+    .accordion-trigger.open { background: var(--accent-light); }
+    .accordion-chevron { font-size: 11px; color: var(--text-muted); transition: transform .2s ease; flex-shrink: 0; }
+    .accordion-trigger.open .accordion-chevron { transform: rotate(90deg); }
+    .accordion-label { font-size: 12.5px; font-weight: 600; color: var(--text-primary); flex: 1; }
+    .accordion-tag { font-size: 9px; padding: 1px 7px; border-radius: 10px; background: var(--tag-bg); color: var(--tag-text); font-weight: 600; }
+    .accordion-panel { max-height: 0; overflow: hidden; transition: max-height .28s ease; background: #fafbfc; }
+    .accordion-panel.open { max-height: 400px; }
+    .accordion-content { padding: 12px 16px 14px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.65; border-top: 1px solid var(--border); }
+    .accordion-content ul { padding-left: 16px; margin-top: 6px; }
+    .accordion-content li { margin-bottom: 4px; }
+    .accordion-content strong { color: var(--text-primary); }
+
+    /* ── Column header tooltip ──────────────────────────────── */
+    .col-header { position: relative; cursor: default; }
+    .col-header:hover .col-tooltip { opacity: 1; pointer-events: all; transform: translateY(0); }
+
+    .col-tooltip {
+      position: absolute;
+      top: calc(100% + 10px);
+      left: 0;
+      width: 240px;
+      background: #1a1d23;
+      color: #e2e8f0;
+      font-size: 11.5px;
+      line-height: 1.6;
+      padding: 11px 14px;
+      border-radius: 8px;
+      box-shadow: 0 6px 24px rgba(0,0,0,.28);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-4px);
+      transition: opacity .18s ease, transform .18s ease;
+    }
+    /* keep tooltip inside right edge for last columns */
+    .unit-col:nth-last-child(-n+2) .col-tooltip { left: auto; right: 0; }
+
+    .col-tooltip::before {
+      content: '';
+      position: absolute;
+      top: -5px; left: 18px;
+      width: 10px; height: 10px;
+      background: #1a1d23;
+      transform: rotate(45deg);
+      border-radius: 2px;
+    }
+    .unit-col:nth-last-child(-n+2) .col-tooltip::before { left: auto; right: 18px; }
+
+    .col-tooltip-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #64748b;
+      margin-bottom: 5px;
+    }
+
+    .modal::-webkit-scrollbar { width: 5px; }
+    .modal::-webkit-scrollbar-track { background: transparent; }
+    .modal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    .site-footer { text-align: center; padding: 14px; font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border); background: var(--surface); }
+
+    @media (max-width: 700px) {
+      .unit-grid { grid-template-columns: 1fr; min-width: unset; }
+      .info-grid { grid-template-columns: 1fr; }
+      .site-header .meta { display: none; }
+      .search-bar { width: 160px; }
+    }
+    @media print {
+      .site-header { position: static; }
+      .modal-overlay { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="brand">
+    <div class="logo-mark">S</div>
+    <div>
+      <div style="font-size:15px;font-weight:700;letter-spacing:.01em;">Swell Interactive</div>
+      <div style="font-size:10px;opacity:.6;">Business KPI &amp; Metrics Reference</div>
+    </div>
+  </div>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-bar" type="text" id="searchInput" placeholder="Search metrics…" autocomplete="off" />
+  </div>
+  <div class="meta">
+    <div>Executive Reference</div>
+    <div>Updated May 2026</div>
+  </div>
+</header>
+
+<div class="legend-bar" id="legendBar">
+  <!-- populated by JS from UNITS data -->
+  <div class="legend-planned">
+    <span class="planned-pill">⬡ Planned</span> = Metric defined, not yet built
+  </div>
+</div>
+
+<main class="grid-wrap">
+  <div class="unit-grid" id="unitGrid"></div>
+</main>
+
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-color-bar" id="modalColorBar"></div>
+      <div class="modal-title-wrap">
+        <div class="modal-unit-tag" id="modalUnitTag"></div>
+        <div class="modal-metric-name" id="modalTitle"></div>
+      </div>
+      <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  Executive KPI Reference &nbsp;·&nbsp; Click any metric to explore definitions &nbsp;·&nbsp; Use the search bar to filter
+</footer>
+
+<!-- ── DATA (edit data.js — do not touch this line) ── -->
+<script src="data.js"></script>
+
+<!-- ── APP LOGIC ─────────────────────────────────────── -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── Legend ──────────────────────────────────────────── */
+  function buildLegend() {
+    const bar = document.getElementById('legendBar');
+    const tip = bar.querySelector('.tip');
+    UNITS.forEach(unit => {
+      const item = document.createElement('div');
+      item.className = 'legend-item';
+      item.innerHTML = `<div class="legend-dot" style="background:${unit.color}"></div> ${unit.label}`;
+      bar.insertBefore(item, tip);
+    });
+  }
+
+  /* ── Grid ────────────────────────────────────────────── */
+  function buildGrid() {
+    const grid = document.getElementById('unitGrid');
+    grid.innerHTML = '';
+    // Set column count dynamically
+    grid.style.gridTemplateColumns = `repeat(${UNITS.length}, 1fr)`;
+
+    UNITS.forEach(unit => {
+      const col = document.createElement('div');
+      col.className = 'unit-col';
+      col.dataset.unitId = unit.id;
+
+      const totalMetrics = unit.categories.reduce((s, c) => s + c.metrics.length, 0);
+      const hdr = document.createElement('div');
+      hdr.className = 'col-header';
+      hdr.style.setProperty('--col-color', unit.color);
+      hdr.innerHTML = `
+        <span class="col-icon">${unit.icon}</span>
+        <div class="col-title">${unit.label}</div>
+        <div class="col-count">${totalMetrics} metrics &nbsp;·&nbsp; hover for overview</div>
+        ${unit.description ? `
+        <div class="col-tooltip">
+          <div class="col-tooltip-label">Section Overview</div>
+          ${unit.description}
+        </div>` : ''}
+      `;
+      col.appendChild(hdr);
+
+      const list = document.createElement('div');
+      list.className = 'metric-list';
+
+      unit.categories.forEach(cat => {
+        const divider = document.createElement('div');
+        divider.className = 'cat-divider';
+        divider.textContent = cat.name;
+        list.appendChild(divider);
+
+        cat.metrics.forEach(metric => {
+          const row = document.createElement('div');
+          row.className = 'metric-row';
+          row.style.setProperty('--col-color', unit.color);
+          row.setAttribute('role', 'button');
+          row.setAttribute('tabindex', '0');
+          row.dataset.searchText = (metric.name + ' ' + metric.tagline + ' ' + metric.definition).toLowerCase();
+
+          const isPlanned = metric.status === 'planned';
+          if (isPlanned) row.classList.add('is-planned');
+
+          row.innerHTML = `
+            <div class="metric-bullet"></div>
+            <div class="metric-info">
+              <div class="metric-name">
+                ${metric.name}
+                ${isPlanned ? '<span class="planned-pill">⬡ Planned</span>' : ''}
+              </div>
+              <div class="metric-tagline">${metric.tagline}</div>
+            </div>
+            <div class="metric-arrow">▶</div>
+          `;
+          row.addEventListener('click', () => openModal(unit, metric));
+          row.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(unit, metric); }
+          });
+          list.appendChild(row);
+        });
+      });
+
+      col.appendChild(list);
+      grid.appendChild(col);
+    });
+  }
+
+  /* ── Modal ───────────────────────────────────────────── */
+  const overlay  = document.getElementById('modalOverlay');
+  const modal    = document.getElementById('modal');
+  const closeBtn = document.getElementById('modalClose');
+
+  function openModal(unit, metric) {
+    document.getElementById('modalColorBar').style.background = unit.color;
+    const tag = document.getElementById('modalUnitTag');
+    tag.innerHTML = `${unit.icon} ${unit.label}`;
+    tag.style.background = unit.color + '18';
+    tag.style.color = unit.color;
+    document.getElementById('modalTitle').innerHTML =
+      metric.name + (metric.status === 'planned' ? ' <span class="planned-pill" style="font-size:11px;vertical-align:middle">⬡ Planned</span>' : '');
+
+    const body = document.getElementById('modalBody');
+    body.innerHTML = '';
+
+    if (metric.status === 'planned') {
+      // ── Planned / opportunity view ──────────────────────────
+      const banner = document.createElement('div');
+      banner.className = 'planned-banner';
+      banner.innerHTML = `
+        <div class="planned-banner-icon">💡</div>
+        <div class="planned-banner-body">
+          <div class="planned-banner-label">Opportunity — Not Yet Built</div>
+          <div class="planned-banner-text">${metric.opportunity || 'Definition and build plan coming soon.'}</div>
+        </div>
+      `;
+      body.appendChild(banner);
+
+      const infoGrid = document.createElement('div');
+      infoGrid.className = 'info-grid';
+      infoGrid.innerHTML = `
+        <div class="info-cell full">
+          <div class="label">What This Metric Would Measure</div>
+          <div class="value" style="font-weight:400;font-size:12.5px;line-height:1.6">${metric.tagline} — once built, this metric would provide a standardized, recurring view into ${metric.tagline.toLowerCase()} across the ${unit.label} function.</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">Status</div>
+          <div class="value" style="color:#92600a">Not Yet Built</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">Business Unit</div>
+          <div class="value">${unit.label}</div>
+        </div>
+      `;
+      body.appendChild(infoGrid);
+
+    } else {
+      // ── Live metric view ────────────────────────────────────
+      const def = document.createElement('div');
+      def.className = 'modal-definition';
+      def.style.borderLeftColor = unit.color;
+      def.textContent = metric.definition;
+      body.appendChild(def);
+
+      const infoGrid = document.createElement('div');
+      infoGrid.className = 'info-grid';
+      infoGrid.innerHTML = `
+        <div class="info-cell full">
+          <div class="label">Formula</div>
+          <code class="formula-code">${metric.formula}</code>
+        </div>
+        <div class="info-cell">
+          <div class="label">Owner</div>
+          <div class="value">${metric.owner}</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">Update Cadence</div>
+          <div class="value">${metric.cadence}</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">Data Source</div>
+          <div class="value">${metric.source}</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">Target / Threshold</div>
+          <div class="value" style="color:${unit.color}">${metric.target}</div>
+        </div>
+      `;
+      body.appendChild(infoGrid);
+    }
+
+    if (metric.sections && metric.sections.length > 0) {
+      const accTitle = document.createElement('div');
+      accTitle.className = 'accordion-title';
+      accTitle.textContent = 'Deep Dive';
+      body.appendChild(accTitle);
+
+      const accWrap = document.createElement('div');
+      accWrap.className = 'accordion-wrap';
+
+      metric.sections.forEach((sec, idx) => {
+        const item = document.createElement('div');
+        item.className = 'accordion-item';
+
+        const trigger = document.createElement('button');
+        trigger.className = 'accordion-trigger';
+        trigger.innerHTML = `
+          <span class="accordion-chevron">▶</span>
+          <span class="accordion-label">${sec.label}</span>
+          ${sec.tag ? `<span class="accordion-tag">${sec.tag}</span>` : ''}
+        `;
+
+        const panel = document.createElement('div');
+        panel.className = 'accordion-panel';
+        const content = document.createElement('div');
+        content.className = 'accordion-content';
+        content.innerHTML = sec.content;
+        panel.appendChild(content);
+
+        trigger.addEventListener('click', () => {
+          const isOpen = trigger.classList.contains('open');
+          accWrap.querySelectorAll('.accordion-trigger').forEach(t => t.classList.remove('open'));
+          accWrap.querySelectorAll('.accordion-panel').forEach(p => p.classList.remove('open'));
+          if (!isOpen) { trigger.classList.add('open'); panel.classList.add('open'); }
+        });
+
+        if (idx === 0) { trigger.classList.add('open'); panel.classList.add('open'); }
+
+        item.appendChild(trigger);
+        item.appendChild(panel);
+        accWrap.appendChild(item);
+      });
+
+      body.appendChild(accWrap);
+    }
+
+    overlay.classList.add('open');
+    modal.scrollTop = 0;
+    closeBtn.focus();
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  closeBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  /* ── Search ──────────────────────────────────────────── */
+  document.getElementById('searchInput').addEventListener('input', function () {
+    const q = this.value.toLowerCase().trim();
+    document.querySelectorAll('.unit-col').forEach(col => {
+      const rows = col.querySelectorAll('.metric-row');
+      let visible = 0;
+      rows.forEach(row => {
+        const match = !q || row.dataset.searchText.includes(q);
+        row.classList.toggle('hidden', !match);
+        if (match) visible++;
+      });
+      col.classList.toggle('all-hidden', visible === 0);
+    });
+  });
+
+  /* ── Init ────────────────────────────────────────────── */
+  buildLegend();
+  buildGrid();
+})();
+</script>
+</body>
+</html>
